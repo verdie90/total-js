@@ -18,7 +18,7 @@ options.livereload = "https://localhost";
 // Enables cluster:
 // options.cluster = 'auto';
 // options.cluster_limit = 10; // max 10. threads (works only with "auto" scaling)
-
+options.servicemode = process.argv.indexOf("--servicemode", 1) !== -1;
 // Enables threads:
 // options.cluster = 'auto';
 // options.cluster_limit = 10; // max 10. threads (works only with "auto" scaling)
