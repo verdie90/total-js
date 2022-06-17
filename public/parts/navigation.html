@@ -1,0 +1,98 @@
+<header>
+	<label><i class="fa fa-align-justify"></i>@(Navigation)</label>
+	<nav>
+		<button class="exec" data-exec="navigation/create"><i class="fa fa-plus-circle"></i>@(Add)</button>
+	</nav>
+</header>
+
+<div data---="viewbox__common.page__parent:.ui-layout2-section;margin:45">
+	<div data---="table__common.navigation__border:1;highlight:false;click:navigation/button;dblclick:navigation/open;height:.ui-layout2-section;margin:45;scrollbar:1;noborder:1">
+
+		<script type="text/html" data-size="0,150px" data-head="@(Name),@(Controls)" data-sort="name" data-align="0,1">
+			<tr>
+				<td>{{ if icon }}<i class="{{ icon }}" style="width:15px;margin:2px 5px 0 0;float:left"></i>{{ fi }}{{ name }}</td>
+				<td class="center"><button name="up"><i class="fa fa-arrow-up"></i></button><button name="down"><i class="fa fa-arrow-down"></i></button><button name="edit"><i class="fa fa-pencil"></i></button><button name="remove" class="red"><i class="fa fa-trash-alt"></i></button></td>
+			</tr>
+		</script>
+
+		<script type="text/html" data-type="empty">
+			@(You don't have any navigation)
+		</script>
+
+	</div>
+</div>
+
+<div data---="importer__common.form__if:navigationform;url:/forms/navigation.html"></div>
+
+<script>
+	PLUGIN('navigation', function(exports) {
+
+		exports.refresh = function() {
+		};
+
+		exports.open = function(item) {
+			var model = CLONE(item);
+			model.children = undefined;
+			SET('navigationform @reset', model);
+			SET('common.form', 'navigationform');
+		};
+
+		exports.create = function() {
+			SET('navigationform @reset', { type: 'view' });
+			SET('common.form', 'navigationform');
+		};
+
+		exports.button = function(name, row) {
+
+			if (name instanceof Object) {
+				row = name;
+				name = 'edit';
+			}
+
+			switch (name) {
+				case 'up':
+
+					var index = common.navigation.findIndex('id', row.id);
+					var prev = common.navigation[index - 1];
+					if (prev) {
+						common.navigation[index - 1] = common.navigation[index];
+						common.navigation[index] = prev;
+						UPD('common.navigation');
+						exports.sortindex();
+					}
+					break;
+
+				case 'down':
+					var index = common.navigation.findIndex('id', row.id);
+					var next = common.navigation[index + 1];
+					if (next) {
+						common.navigation[index + 1] = common.navigation[index];
+						common.navigation[index] = next;
+						UPD('common.navigation');
+						exports.sortindex();
+					}
+					break;
+
+				case 'edit':
+					exports.open(row);
+					break;
+				case 'remove':
+					SETTER('approve/show', '@(Are you sure you want to remove selected item?)', '"trash-o" @(Remove)', function() {
+						AJAX('DELETE /api/navigation/' + row.id, AEXEC('common/refresh'));
+					});
+					break;
+			}
+		};
+
+		exports.sortindex = function() {
+			var id = [];
+			for (var i = 0; i < common.navigation.length; i++)
+				id.push(common.navigation[i].id);
+			SETTER('loading/show');
+			AJAX('GET /api/navigation/sort/?id=' + id.join(','), function() {
+				SETTER('loading/hide', 1000);
+			});
+		};
+
+	});
+</script>

@@ -1,0 +1,47 @@
+<div data---="form__common.form__if:navigationform;icon:far fa-align-justify;autofocus:true;reload:navigationform/reload;scrollbar:1;submit:navigationform/submit;width:450" class="hidden" data-scope="navigationform">
+	<div class="padding">
+		<div data---="input__?.name__required:1" class="m">@(Name)</div>
+		<div data---="input__?.designid__dirsource:common.views;dirempty:@(Empty);required:1" class="m">@(Open view)</div>
+		<div class="row">
+			<div class="col-md-6 m">
+				<div data---="input__?.icon__type:icon__''">@(Icon)</div>
+			</div>
+			<div class="col-md-6 m">
+				<div data---="input__?.color__type:color__''">@(Color)</div>
+			</div>
+		</div>
+	</div>
+	<nav data---="validation__?">
+		<button name="submit" style="width:50%" disabled><i class="fa fa-check-circle"></i>@(SUBMIT)</button>
+		<button name="cancel" style="width:50%">@(Cancel)</button>
+	</nav>
+</div>
+
+<script>
+
+	PLUGIN('navigationform', function(exports) {
+
+		exports.reload = function(com) {
+			var model = GET('?');
+			var id = model ? model.id : null;
+			com.reconfigure({ title: id ? '@(Update navigation)' : '@(Create navigation)' });
+		};
+
+		exports.submit = function(hide) {
+			var model = GET('? @reset');
+
+			if (model.id && model.parentid === model.id)
+				model.parentid = undefined;
+
+			if (!model.id)
+				model.sortindex = common.navigation.length;
+
+			AJAX('POST /api/navigation/', model, ASETTER('message/response', '@(Navigation has been saved successfully)', function(response) {
+				EXEC('common/refresh');
+				hide();
+			}));
+		};
+
+	});
+
+</script>

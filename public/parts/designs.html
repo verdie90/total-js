@@ -1,0 +1,64 @@
+<header>
+	<label><i class="far fa-pencil-paintbrush"></i>@(Designs)</label>
+	<nav>
+		<button class="exec" data-exec="designs/create"><i class="fa fa-plus-circle"></i>@(Add)</button>
+	</nav>
+</header>
+
+<div data---="viewbox__common.page__parent:.ui-layout2-section;margin:45">
+	<div data---="table__common.designs__border:1;highlight:false;click:designs/button;dblclick:designs/button;height:.ui-layout2-section;margin:45;scrollbar:1;noborder:1">
+
+		<script type="text/html" data-size="0,120px,80px" data-head="@(Name),@(Type),@(Controls)" data-sort="name,type" data-align="0,1,1">
+			<tr>
+				<td>{{ name }}</td>
+				<td class="center">{{ type | type }}</td>
+				<td class="center"><button name="edit"><i class="fa fa-pencil"></i></button><button name="remove" class="red"><i class="far fa-trash-alt"></i></button></td>
+			</tr>
+		</script>
+
+		<script type="text/html" data-type="empty">
+			@(You don't have any designs)
+		</script>
+
+	</div>
+</div>
+
+<div data---="importer__common.form__if:designform;url:/forms/design.html"></div>
+
+<script>
+	PLUGIN('designs', function(exports) {
+
+		exports.refresh = function() {
+		};
+
+		exports.open = function(item) {
+			SETTER('loading/show');
+			EXEC('builder/edit', item.id);
+		};
+
+		exports.create = function() {
+			SET('designform @reset', { type: 'view' });
+			SET('common.form', 'designform');
+		};
+
+		exports.button = function(name, row) {
+
+			if (name instanceof Object) {
+				row = name;
+				name = 'edit';
+			}
+
+			switch (name) {
+				case 'edit':
+					exports.open(row);
+					break;
+				case 'remove':
+					SETTER('approve/show', '@(Are you sure you want to remove selected item?)', '"trash-o" @(Remove)', function() {
+						AJAX('DELETE /api/designs/' + row.id, AEXEC('common/refresh'));
+					});
+					break;
+			}
+		};
+	});
+
+</script>

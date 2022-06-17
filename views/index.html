@@ -1,0 +1,198 @@
+@{layout('')}
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>@{'%name'}</title>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, user-scalable=no"
+    />
+    <meta name="robots" content="all,follow" />
+    <link
+      href="https://cdn.componentator.com/spa.min@18pro.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script src="https://cdn.componentator.com/spa.min@18.js"></script>
+    <script src="https://cdn.componentator.com/designer/compiler.min.js"></script>
+    <script src="https://designer.totaljs.com/compiler.min.js"></script>
+    @{import('default.css + ui.css', 'ui.js + helpers.js', 'favicon.ico')}
+  </head>
+  <body data---="exec">
+    <div data---="LAZY faicons"></div>
+    <div data---="LAZY directory__null__placeholder:@(Search)"></div>
+    <div data---="LAZY message"></div>
+    <div data---="LAZY approve"></div>
+    <div data---="LAZY colorpicker"></div>
+    <div data---="LAZY menu"></div>
+    <div data---="LAZY datepicker"></div>
+    <div data---="LAZY designer"></div>
+
+    <div data---="loading__null__style:2"></div>
+
+    <div data---="layout2__null__parent:window" class="invisible">
+      <div
+        data-type="left"
+        data-size="220,220,200,0"
+        data-scrollbar="selector:main;margin:76"
+      >
+        <header>
+          <a href="/" class="logo">@{'%name'}</a>
+        </header>
+        <main>
+          <div style="padding: 18px 0">
+            <div
+              data---="navigation__common.navigation__exec:common/open;autoselect:1"
+            ></div>
+          </div>
+        </main>
+        <footer data---="selected__common.page__selector:span">
+          <span
+            title="@(Navigation)"
+            class="exec"
+            data-exec="common/part"
+            data-if="navigation"
+            ><i class="far fa-navicon"></i
+          ></span>
+          <span
+            title="@(Designs)"
+            class="exec"
+            data-exec="common/part"
+            data-if="designs"
+            ><i class="far fa-layer-group"></i
+          ></span>
+          <span title="@(Users)" class="disabled"
+            ><i class="far fa-users"></i
+          ></span>
+          <span title="@(Settings)" class="disabled"
+            ><i class="far fa-cog"></i
+          ></span>
+        </footer>
+      </div>
+      <div data-type="main">
+        <div
+          data---="part__common.page__if:navigation;url:/parts/navigation.html"
+          class="part"
+        ></div>
+        <div
+          data---="part__common.page__if:designs;url:/parts/designs.html"
+          class="part"
+        ></div>
+        <div
+          data---="part__common.page__if:builder;url:https://designer.totaljs.com/builder@1.html"
+        ></div>
+      </div>
+    </div>
+
+    <script>
+      var common = {};
+
+      common.types = [
+        { id: "view", name: "View", icon: "fal fa-window-maximize" },
+        { id: "fullform", name: "Full form", icon: "fab fa-wpforms" },
+        { id: "largeform", name: "Large form", icon: "fab fa-wpforms" },
+        { id: "form", name: "Form", icon: "far fa-window-maximize" },
+        { id: "miniform", name: "Mini form", icon: "fab fa-wpforms" },
+      ];
+      common.page = "builder";
+
+      function maketree(arr, items, parentid) {
+        for (var i = 0; i < items.length; i++) {
+          var item = items[i];
+          if ((!parentid && !item.parentid) || item.parentid === parentid) {
+            item.children = [];
+            maketree(item.children, items, item.id);
+            if (!item.children.length) delete item.children;
+            arr.push(item);
+          }
+        }
+      }
+
+      PLUGIN("common", function (exports) {
+        exports.refresh = function () {
+          AJAX("GET /api/navigation/", function (response) {
+            for (var i = 0; i < response.length; i++) {
+              var item = response[i];
+              item.collapsed = true;
+              item.html =
+                '<span><i class="' +
+                (item.icon ? item.icon : "far fa-file-alt") +
+                '"></i></span>' +
+                Thelpers.encode(item.name);
+              if (item.type === "view") views.push(item);
+            }
+
+            var tree = [];
+            maketree(tree, response, "");
+            SET("common.navigation", response);
+            SET("common.navigation2", tree);
+
+            AJAX("GET /api/designs/", function (response) {
+              var views = [];
+
+              for (var i = 0; i < response.length; i++) {
+                var item = response[i];
+                item.html =
+                  '<span><i class="' +
+                  (item.type === "view"
+                    ? "fal fa-window-maximize"
+                    : "fab fa-wpforms") +
+                  '"></i></span>' +
+                  Thelpers.encode(item.name) +
+                  " <em>" +
+                  Thelpers.type(item.type) +
+                  "</em>";
+                if (item.type === "view") views.push(item);
+              }
+
+              SET("common.designs", response);
+              SET("common.views", views);
+
+              var tree = [];
+              maketree(tree, response, "");
+              SET("common.designs2", tree);
+
+              if (!common.ready) SET("commom.ready", true);
+
+              SETTER(true, "loading/hide", 1000);
+            });
+          });
+        };
+
+        exports.open = function (item) {
+          SET("?.page", "builder");
+          if (item) {
+            SET("?.navigationid", item.id);
+            if (item.designid) EXEC(true, "builder/load", item.designid);
+          } else SETTER("loading/hide");
+        };
+
+        exports.part = function (el) {
+          var id = el.attrd("if");
+          SET("?.page", id);
+          SETTER("navigation/unselect");
+        };
+
+        exports.refresh();
+      });
+
+      ON("action.back", function ($) {
+        $.caller && EXEC("builder/refresh", $.caller.id);
+      });
+
+      ON("builder", function (builder) {
+        builder.url_sources = "GET /api/sources/";
+        builder.url_sources_save = "POST /api/sources/";
+        builder.url_sources_delete = "DELETE /api/sources/{0}/";
+        builder.url_actions = "GET /api/actions/designer/";
+        builder.url_designs = "GET /api/designs/{0}/";
+        builder.url_designs_save = "POST /api/designs/";
+        builder.components = [
+          "https://cdn.componentator.com/designer/components.json",
+        ];
+      });
+    </script>
+  </body>
+</html>

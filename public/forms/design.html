@@ -1,0 +1,47 @@
+<div data---="form__common.form__if:designform;icon:far fa-pencil-paintbrush;autofocus:true;reload:designform/reload;scrollbar:1;submit:designform/submit;width:600" class="hidden" data-scope="designform">
+	<div class="padding">
+
+		<div data---="radiobuttonexpert__?.type__datasource:common.types;required:1;label:@(Type\:)" class="m">
+			<script type="text/html">
+				<div class="iconbutton">
+					<i class="{{ icon }}"></i>
+					<div>{{ name }}</div>
+				</div>
+			</script>
+		</div>
+		<hr />
+		<div data---="input__?.name__required:1">@(Name)</div>
+	</div>
+	<nav data---="validation__?">
+		<button name="submit" disabled><i class="fa fa-check-circle"></i>@(SUBMIT)</button>
+		<button name="cancel">@(Cancel)</button>
+	</nav>
+</div>
+
+<script>
+
+	PLUGIN('designform', function(exports) {
+
+		exports.reload = function(com) {
+			var model = GET('?');
+			var id = model ? model.id : null;
+			com.reconfigure({ title: id ? '@(Update UI design)' : '@(Create UI design)' });
+		};
+
+		exports.submit = function(hide) {
+			var model = GET('? @reset');
+
+			if (model.id && model.parentid === model.id)
+				model.parentid = undefined;
+
+			AJAX('POST /api/designs/', model, ASETTER('message/response', function(response) {
+				hide();
+				EXEC('common/refresh');
+				if (!model.id)
+					EXEC('builder/edit', response.value);
+			}));
+		};
+
+	});
+
+</script>
